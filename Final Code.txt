@@ -1,0 +1,336 @@
+
+
+ _______________________________________________________________________________
+|	NIELIT KOKRAJHAR EC - WINTER INTERNSHIP 2024				|
+|_______________________________________________________________________________|
+|	Developed by S. K. Wary and R. Oraon					|
+|_______________________________________________________________________________|
+|	AI CHATBOT FOR MEDICAL CARE USING MACHINE LEARNING AND PYTHON		|
+|_______________________________________________________________________________|
+|	Python Codebase and M L Algorithms					|
+|_______________________________________________________________________________|
+
+
+[Importing the required libraries]
+
+import numpy as np
+# Import the NumPy library for numerical operations
+
+import nltk
+# Import the NLTK (Natural Language Toolkit) library for natural language processing tasks
+
+import string
+# Import the string module for string manipulation operations
+
+import random
+# Import the random module for generating random choices
+
+# These libraries will be used for various functionalities in the code.
+# NumPy for numerical operations, NLTK for natural language processing, string for text manipulation,
+# Random for generating random responses or choices.
+
+[Importing and reading the corpus]
+
+f = open('data.txt', 'r', errors='ignore')
+# Open the file 'data.txt' in read mode, ignoring encoding errors if any
+
+raw_doc = f.read()
+# Read the content of the file into the variable 'raw_doc'
+
+raw_doc = raw_doc.lower()
+# Convert the entire document to lowercase to ensure consistency in text processing
+
+nltk.download('punkt')
+# Download the 'punkt' tokenizer from NLTK for sentence tokenization
+
+nltk.download('wordnet')
+# Download the 'wordnet' dictionary from NLTK for lemmatization
+
+sent_tokens = nltk.sent_tokenize(raw_doc)
+# Tokenize the document into a list of sentences using NLTK's sentence tokenizer
+# The 'sent_tokens' list now contains individual sentences from the document
+
+word_tokens = nltk.word_tokenize(raw_doc)
+# Tokenize the document into a list of words using NLTK's word tokenizer
+# The 'word_tokens' list contains individual words obtained by tokenizing the document
+
+[Example of sentence tokens]
+
+sent_tokens[:2]
+# Display the first two elements of the list 'sent_tokens'
+# The 'sent_tokens' list contains sentences obtained by tokenizing the pre-processed document
+# using the NLTK library. Each element in this list represents a sentence in the document.
+# Displaying the first two sentences for reference or analysis.
+
+[Example of word tokens]
+
+word_tokens[:2]
+# Display the first two elements of the list 'word_tokens'
+# The 'word_tokens' list contains tokens obtained by tokenizing the pre-processed document
+# using the NLTK library. This list represents individual words in the document.
+
+[Text preprocessing]
+
+lemmer = nltk.stem.WordNetLemmatizer()
+# Create a WordNet Lemmatizer object for lemmatization
+# WordNet is a semantically-oriented dictionary of English included in NLTK
+# It provides lemmatization capabilities to reduce words to their base or root form
+
+def LemTokens(tokens):
+    """
+    Lemmatize a list of tokens using the WordNet Lemmatizer.
+
+    Parameters:
+    - tokens (list): List of tokens to lemmatize.
+
+    Returns:
+    - list: List of lemmatized tokens.
+    """
+    return [lemmer.lemmatize(token) for token in tokens]
+
+remove_punct_dict = dict((ord(punct), None) for punct in string.punctuation)
+# Create a dictionary to remove punctuation characters from text using translate method
+
+def LemNormalize(text):
+    """
+    Normalize and lemmatize the input text.
+
+    Parameters:
+    - text (str): Input text to normalize and lemmatize.
+
+    Returns:
+    - list: List of lemmatized tokens after removing punctuation and converting to lowercase.
+    """
+    return LemTokens(nltk.word_tokenize(text.lower().translate(remove_punct_dict)))
+# Tokenize the text, convert to lowercase, remove punctuation and then lemmatize the tokens
+
+[Defining the greeting function]
+
+# Define greeting inputs and corresponding responses
+GREET_INPUTS = ("hello", "hi", "greetings", "sup", "what's up", "hey", "can you help me?", "good morning", "good evening", "good evening",)
+GREET_RESPONSES = ["hi", "hey", "*nods*", "hi there", "hello", "I am glad! You are talking to me", "how may i help you with.", "good morning to you too", "good evening to you too", "good afternoon to you too",]
+
+def greet(sentence):
+    """
+    Respond to a greeting in the input sentence.
+
+    Parameters:
+    - sentence (str): Input sentence to check for greetings.
+
+    Returns:
+    - str or None: A randomly selected greeting response if a greeting is detected, otherwise None.
+    """
+    for word in sentence.split():
+        # Check if any word in the sentence is a known greeting
+        if word.lower() in GREET_INPUTS:
+            # Return a randomly selected greeting response
+            return random.choice(GREET_RESPONSES)
+    # If no greeting is detected, return None
+    return None
+
+[Response generation]
+
+# Import necessary libraries for text processing and neural network modeling
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, LSTM, Dense
+
+[Sequence-To-Sequnce Model]
+
+# Seq2Seq Model Definition
+latent_dim = 256
+# Dimensionality of the latent space in the Seq2Seq model
+
+[Encoder]
+
+# Encoder Setup
+num_encoder_tokens = 10000
+# Number of tokens in the encoder vocabulary
+
+encoder_inputs = Input(shape=(None, num_encoder_tokens))
+# Input layer for the encoder with variable sequence length and 'num_encoder_tokens' features
+
+encoder = LSTM(latent_dim, return_state=True)
+# LSTM layer for encoding with latent_dim units, returning states
+
+encoder_outputs, state_h, state_c = encoder(encoder_inputs)
+# Obtain encoder outputs and states by applying the LSTM layer to encoder inputs
+
+encoder_states = [state_h, state_c]
+# Create a list containing the hidden state and cell state obtained from the encoder
+
+encoder_model = Model(encoder_inputs, encoder_states)
+# Create a Keras Model for the encoder that takes encoder inputs and outputs encoder states
+
+[Decoder]
+
+# Decoder Setup
+num_decoder_tokens = 100
+# Number of tokens in the decoder vocabulary
+
+decoder_inputs = Input(shape=(None, num_decoder_tokens))
+# Input layer for the decoder with variable sequence length and 'num_decoder_tokens' features
+
+decoder_lstm = LSTM(latent_dim, return_sequences=True, return_state=True)
+# LSTM layer for decoding with latent_dim units, returning sequences and states
+
+decoder_outputs, _, _ = decoder_lstm(decoder_inputs, initial_state=encoder_states)
+# Obtain decoder outputs and states by applying the LSTM layer to decoder inputs
+# Initialize the LSTM layer with the encoder states as the initial state
+
+decoder_dense = Dense(num_decoder_tokens, activation='softmax')
+# Dense (fully connected) layer for generating decoder outputs with 'num_decoder_tokens' units and softmax activation
+
+decoder_outputs = decoder_dense(decoder_outputs)
+# Apply the dense layer to the decoder outputs
+
+[Inference setup for Encoder]
+
+# Inference setup for Encoder
+encoder_model = Model(encoder_inputs, encoder_states)
+# Create a new Keras Model for encoding input sequences during the inference phase
+
+decoder_state_input_h = Input(shape=(latent_dim,))
+decoder_state_input_c = Input(shape=(latent_dim,))
+decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
+# Define input layers for the initial hidden state and cell state of the decoder during inference
+
+decoder_outputs, state_h, state_c = decoder_lstm(decoder_inputs, initial_state=decoder_states_inputs)
+# Predict decoder outputs and updated states using the decoder LSTM layer during inference
+decoder_states = [state_h, state_c]
+# Create a list containing the updated hidden state and cell state for subsequent iterations
+
+decoder_outputs = decoder_dense(decoder_outputs)
+# Apply a fully connected (Dense) layer to the decoder outputs
+
+decoder_model = Model([decoder_inputs] + decoder_states_inputs, [decoder_outputs] + decoder_states)
+# Create a new Keras Model for the decoder during the inference phase
+# Takes both decoder inputs and initial states as inputs, and produces decoder outputs and updated states as outputs
+# Combines the decoder LSTM layer and the dense layer from the training setup
+
+[Decode sequence function for generating responses]
+
+# Decode sequence function for generating responses
+def decode_sequence(input_seq):
+    # Predict the initial states of the decoder using the encoder model
+    states_value = encoder_model.predict(input_seq)
+
+    # Initialize the target sequence for decoding
+    target_seq = np.zeros((1, 1, num_decoder_tokens))
+    target_seq[0, 0, target_token_index['<START>']] = 1.
+
+    # Initialize variables for stopping condition and decoded sentence
+    stop_condition = False
+    decoded_sentence = ''
+
+    # Decode the sequence using a loop until the stopping condition is met
+    while not stop_condition:
+        # Predict the output tokens and updated states using the decoder model
+        output_tokens, h, c = decoder_model.predict([target_seq] + states_value)
+
+        # Find the index of the token with the highest probability in the last time step
+        sampled_token_index = np.argmax(output_tokens[0, -1, :])
+
+        # Map the sampled token index back to the actual character using reverse mapping
+        sampled_char = reverse_target_char_index[sampled_token_index]
+
+        # Append the sampled character to the decoded sentence
+        decoded_sentence += sampled_char
+
+        # Check stopping conditions: <END> token or maximum sequence length
+        if sampled_char == '<END>' or len(decoded_sentence) > max_decoder_seq_length:
+            stop_condition = True
+
+        # Prepare the target sequence for the next iteration
+        target_seq = np.zeros((1, 1, num_decoder_tokens))
+        target_seq[0, 0, sampled_token_index] = 1.
+
+        # Update the states for the next iteration
+        states_value = [h, c]
+
+    # Return the decoded sentence
+    return decoded_sentence
+
+[Defining conversation start/end protocols]
+
+def response(user_response):
+    robo1_response = ''
+    # Assuming sent_tokens is a global variable containing tokenized sentences
+    global sent_tokens
+
+    # Create a TfidfVectorizer with a custom tokenizer (LemNormalize) and stop words
+    TfidfVec = TfidfVectorizer(tokenizer=LemNormalize, stop_words='english')
+
+    # Fit and transform the TfidfVectorizer on the global sent_tokens
+    tfidf = TfidfVec.fit_transform(sent_tokens)
+
+    # Calculate cosine similarity between the user's response and all sentences
+    vals = cosine_similarity(tfidf[-1], tfidf)
+
+    # Get the index of the sentence with the highest similarity (excluding the user's input)
+    idx = vals.argsort()[0][-2]
+
+    # Flatten and sort the similarity values
+    flat = vals.flatten()
+    flat.sort()
+
+    # Get the second highest similarity value
+    req_tfidf = flat[-2]
+    if req_tfidf == 0:
+        robo1_response = robo1_response + "I am sorry! I don't understand you."
+        return robo1_response
+    else:
+
+      # Add the response associated with the most similar sentence to robo1_response
+        robo1_response = robo1_response + sent_tokens[idx]
+        return robo1_response
+
+[During conversation, process user input and generate responses]
+
+# Initialize a flag for the conversation loop
+flag = True
+
+# Print an introductory message for the bot
+print("BOT: My name is TalkABot. Let's have a conversation! Also, if you want to exit any time, just say Bye!")
+
+# Start the conversation loop
+while flag == True:
+  # Get user input
+    user_response = input()
+    user_response = user_response.lower()
+
+  # Check if the user wants to end the conversation
+    if user_response != 'bye':
+
+      # Check for specific user responses
+        if user_response == 'thanks' or user_response == 'thank you':
+
+            # If the user expresses gratitude, end the conversation
+            flag = False
+            print("BOT: You are welcome...")
+        else:
+            # Check for common greetings
+            if greet(user_response) != None:
+                print("BOT: " + greet(user_response))
+            else:
+              # Add the user's response to the list of sentences
+                sent_tokens.append(user_response)
+
+                # Update the word_tokens list with the words from the user's input
+                word_tokens = word_tokens + nltk.word_tokenize(user_response)
+
+                 # Remove duplicates to get a unique set of words
+                final_words = list(set(word_tokens))
+
+                # Generate and print the bot's response using the response function
+                print("BOT: ", end="")
+                print(response(user_response))
+
+                # Remove the user's response from the list of sentences to avoid duplication
+                sent_tokens.remove(user_response)
+    else:
+      # If the user says 'bye', end the conversation
+        flag = False
+        print("BOT: Goodbye!")
+
